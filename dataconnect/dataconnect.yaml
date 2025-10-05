@@ -1,0 +1,12 @@
+specVersion: "v1"
+serviceId: "learn-lite30"
+location: "us-central1"
+schema:
+  source: "./schema"
+  datasource:
+    postgresql:
+      database: "fdcdb"
+      cloudSql:
+        instanceId: "learn-lite30-fdc"
+      # schemaValidation: "COMPATIBLE"
+connectorDirs: ["./connector"]
