@@ -1,23 +1,67 @@
-import { auth } from "./firebase";
-import { getChatResponse } from "./gemini";
+const handleGenerate = async () => {
+  const trimmedPrompt = prompt.trim();
+  setError(null);
 
-export const analyzeWithFlanT5 = async (text) => {
   if (!auth.currentUser) {
-    throw new Error("User not authenticated");
+    toast({
+      title: "Error",
+      description: "Please sign in to generate images",
+      variant: "destructive",
+    });
+    return;
   }
 
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    throw new Error("Gemini API key not configured");
+  if (!trimmedPrompt) {
+    toast({
+      title: "Error",
+      description: "Please enter a prompt to generate an image",
+      variant: "destructive",
+    });
+    return;
   }
+
+  setLoading(true);
 
   try {
-    if (!navigator.onLine) {
-      throw new Error("No internet connection detected. Please check your network settings.");
+    const response = await fetch("http://localhost:8000/generate-image", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        prompt: trimmedPrompt,
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.detail || "Image generation failed");
     }
 
-    return await getChatResponse(`Analyze this document and provide a summary: ${text}`);
+    const blob = await response.blob();
+    const imageUrl = URL.createObjectURL(blob);
+    setGeneratedImage(imageUrl);
+
+    // Save to Firestore
+    await saveImageGeneration(auth.currentUser.uid, {
+      prompt: trimmedPrompt,
+      imageUrl,
+      timestamp: new Date().toISOString(),
+    });
+
+    toast({
+      title: "Success",
+      description: "Image generated successfully!",
+    });
+
   } catch (error) {
-    console.error("Gemini API error:", error);
-    throw error;
+    setError(error.message);
+    toast({
+      title: "Generation Error",
+      description: error.message,
+      variant: "destructive",
+    });
+  } finally {
+    setLoading(false);
   }
 };

@@ -17,14 +17,14 @@ const ImageGeneration = () => {
 
   useEffect(() => {
     if (containerRef.current && generatedImage) {
-      containerRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+      containerRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
     }
   }, [generatedImage]);
 
   const handleGenerate = async () => {
     const trimmedPrompt = prompt.trim();
     setError(null);
-    
+
     if (!auth.currentUser) {
       toast({
         title: "Error",
@@ -37,67 +37,45 @@ const ImageGeneration = () => {
     if (!trimmedPrompt) {
       toast({
         title: "Error",
-        description: "Please enter a prompt to generate an image",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!import.meta.env.VITE_HUGGINGFACE_API_KEY) {
-      toast({
-        title: "Configuration Error",
-        description: "API key is not configured. Please check your environment variables.",
+        description: "Please enter a prompt",
         variant: "destructive",
       });
       return;
     }
 
     setLoading(true);
+
     try {
-      const response = await fetch(
-        "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${import.meta.env.VITE_HUGGINGFACE_API_KEY}`
-          },
-          body: JSON.stringify({
-            inputs: trimmedPrompt,
-            options: {
-              wait_for_model: true,
-              use_cache: false
-            }
-          }),
-        }
-      );
-      
+      const response = await fetch("http://localhost:8000/generate-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: trimmedPrompt }),
+      });
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate image");
+        const err = await response.json();
+        throw new Error(err.detail || "Image generation failed");
       }
 
       const blob = await response.blob();
       const imageUrl = URL.createObjectURL(blob);
       setGeneratedImage(imageUrl);
 
-      // Save image data to Firestore
-      const imageData = {
+      await saveImageGeneration(auth.currentUser.uid, {
         prompt: trimmedPrompt,
         imageUrl,
-        timestamp: new Date().toISOString()
-      };
-      await saveImageGeneration(auth.currentUser.uid, imageData);
+        timestamp: new Date().toISOString(),
+      });
 
       toast({
         title: "Success",
         description: "Image generated successfully!",
       });
-    } catch (error) {
-      setError(error.message);
+    } catch (err) {
+      setError(err.message);
       toast({
         title: "Generation Error",
-        description: error.message || "Failed to generate image",
+        description: err.message,
         variant: "destructive",
       });
     } finally {
@@ -107,8 +85,8 @@ const ImageGeneration = () => {
 
   const handleDownload = () => {
     if (!generatedImage) return;
-    
-    const link = document.createElement('a');
+
+    const link = document.createElement("a");
     link.href = generatedImage;
     link.download = `ai-generated-${Date.now()}.png`;
     document.body.appendChild(link);
@@ -116,8 +94,8 @@ const ImageGeneration = () => {
     document.body.removeChild(link);
 
     toast({
-      title: "Success",
-      description: "Image downloaded successfully!",
+      title: "Downloaded",
+      description: "Image downloaded successfully",
     });
   };
 
@@ -128,115 +106,165 @@ const ImageGeneration = () => {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl p-6">
-      <h1 className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-        AI Image Generation
-      </h1>
-
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="space-y-6"
+        className="text-center mb-10"
       >
-        <div className="rounded-xl border-2 bg-card p-6 shadow-lg">
-          <div className="space-y-4">
-            <div className="relative">
-              <Input
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                placeholder="Describe the image you want to generate..."
-                className="w-full min-h-[100px] resize-none p-4 text-base"
-                onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && handleGenerate()}
-              />
-              <div className="absolute bottom-2 right-2 text-sm text-muted-foreground">
-                {prompt.length} characters
-              </div>
-            </div>
+        <div
+          className="
+            mx-auto mb-4 w-20 h-20 rounded-full
+            bg-gradient-to-br from-indigo-600 to-blue-600
+            flex items-center justify-center
+            shadow-lg shadow-indigo-700/50
+          "
+        >
+          <ImageIcon className="h-10 w-10 text-slate-900" />
+        </div>
 
-            <div className="flex gap-2">
-              <Button
-                onClick={handleGenerate}
-                className="flex-1"
-                disabled={loading || !prompt.trim()}
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating...
-                  </>
-                ) : (
-                  <>
-                    <ImageIcon className="mr-2 h-4 w-4" />
-                    Generate Image
-                  </>
-                )}
-              </Button>
+        <h1
+          className="
+            text-3xl md:text-5xl font-bold
+            bg-gradient-to-r from-indigo-400 to-blue-400
+            bg-clip-text text-transparent
+          "
+        >
+          AI Image Generation
+        </h1>
 
-              {generatedImage && (
-                <Button
-                  variant="outline"
-                  onClick={handleReset}
-                  className="px-3"
-                  title="Reset"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </div>
+        <p className="text-indigo-300 mt-2">
+          Generate stunning images using AI-powered diffusion models
+        </p>
+      </motion.div>
 
-          <div
-            ref={containerRef}
-            className="mt-6 min-h-[300px] rounded-xl border-2 border-dashed p-4 flex items-center justify-center"
-          >
-            {!generatedImage && !loading && !error && (
-              <div className="text-center text-muted-foreground">
-                <ImageIcon className="mx-auto h-12 w-12 mb-2 opacity-50" />
-                <p>Your generated image will appear here</p>
-              </div>
-            )}
-
-            {loading && (
-              <div className="text-center text-muted-foreground">
-                <Loader2 className="mx-auto h-12 w-12 mb-2 animate-spin" />
-                <p>Generating your image...</p>
-              </div>
-            )}
-
-            {error && (
-              <div className="text-center text-destructive">
-                <p className="font-semibold">Error</p>
-                <p className="text-sm">{error}</p>
-              </div>
-            )}
-
-            {generatedImage && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="w-full"
-              >
-                <img
-                  src={generatedImage}
-                  alt="Generated"
-                  className="rounded-lg shadow-lg mx-auto max-w-full h-auto"
-                />
-                <div className="mt-4 flex justify-center">
-                  <Button
-                    onClick={handleDownload}
-                    variant="outline"
-                    className="flex items-center gap-2"
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Image
-                  </Button>
-                </div>
-              </motion.div>
-            )}
+      {/* Prompt Card */}
+      <div
+        className="
+          p-6 rounded-3xl
+          bg-slate-950
+          border border-indigo-700/40
+          shadow-xl shadow-indigo-900/40
+          space-y-6
+        "
+      >
+        {/* Prompt Input */}
+        <div className="relative">
+          <Input
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            placeholder="Describe the image you want to generate..."
+            className="
+              min-h-[100px] w-full
+              bg-slate-900 text-indigo-200
+              border border-indigo-700/40
+              focus:ring-2 focus:ring-indigo-500
+              px-4 py-3
+            "
+            onKeyDown={(e) =>
+              e.key === "Enter" && !e.shiftKey && handleGenerate()
+            }
+          />
+          <div className="absolute bottom-2 right-3 text-xs text-indigo-400">
+            {prompt.length} chars
           </div>
         </div>
-      </motion.div>
+
+        {/* Actions */}
+        <div className="flex justify-between items-center">
+          <Button
+            onClick={handleGenerate}
+            disabled={loading || !prompt.trim()}
+            className="
+              bg-gradient-to-r from-indigo-600 to-blue-600
+              hover:from-indigo-500 hover:to-blue-500
+              text-slate-900
+              shadow-lg shadow-indigo-700/50
+            "
+          >
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <ImageIcon className="mr-2 h-4 w-4" />
+                Generate Image
+              </>
+            )}
+          </Button>
+
+          {generatedImage && (
+            <Button
+              variant="outline"
+              onClick={handleReset}
+              className="border-indigo-600 text-indigo-300 hover:bg-indigo-900/40"
+            >
+              <RefreshCw className="h-4 w-4 mr-2" />
+              Reset
+            </Button>
+          )}
+        </div>
+
+        {/* Result Area */}
+        <div
+          ref={containerRef}
+          className="
+            min-h-[320px]
+            border-2 border-dashed border-indigo-700/40
+            rounded-2xl
+            flex items-center justify-center
+            p-6
+          "
+        >
+          {!generatedImage && !loading && !error && (
+            <div className="text-indigo-400 text-center">
+              <ImageIcon className="mx-auto h-12 w-12 mb-3 opacity-50" />
+              <p>Your generated image will appear here</p>
+            </div>
+          )}
+
+          {loading && (
+            <div className="text-indigo-400 text-center">
+              <Loader2 className="mx-auto h-10 w-10 animate-spin mb-2" />
+              <p>Generating image...</p>
+            </div>
+          )}
+
+          {error && (
+            <div className="text-red-400 text-center">
+              <p className="font-semibold">Error</p>
+              <p className="text-sm">{error}</p>
+            </div>
+          )}
+
+          {generatedImage && (
+            <div className="w-full text-center">
+              <img
+                src={generatedImage}
+                alt="Generated"
+                className="rounded-xl shadow-lg mx-auto max-w-full"
+              />
+
+              <div className="mt-6">
+                <Button
+                  variant="outline"
+                  onClick={handleDownload}
+                  className="
+                    border-indigo-600 text-indigo-300
+                    hover:bg-indigo-900/40
+                  "
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Image
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

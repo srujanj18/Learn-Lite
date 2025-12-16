@@ -1,35 +1,74 @@
 import os
-import requests
-from dotenv import load_dotenv
+from groq import Groq
 
-load_dotenv(dotenv_path='.env.local')
+# ---------------- GROQ CONFIG ----------------
+api_key = os.getenv("GROQ_API_KEY")
+if not api_key:
+    raise RuntimeError("GROQ_API_KEY environment variable not set")
 
-API_URL = "https://router.huggingface.co/hf-inference/models/facebook/bart-large-cnn"
-HEADERS = {
-    "Authorization": f"Bearer {os.environ.get('NEXT_PUBLIC_HUGGINGFACE_API_KEY', '')}",
-}
+client = Groq(api_key=api_key)
 
-def query(payload):
-    """
-    Call Hugging Face Inference API for summarization.
-    payload: {"inputs": "<text>", "parameters": {...}} (parameters optional)
-    """
-    text = payload.get("inputs", "")
+# ---------------- SUMMARIZATION ----------------
+def groq_query(payload):
+    text = payload.get("inputs", "").strip()
     if not text:
-        return {"error": "No input provided"}
+        return {"error": "No input text provided"}
 
     try:
-        response = requests.post(API_URL, headers=HEADERS, json=payload, timeout=60)
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{
+                "role": "user",
+                "content": f"""
+You are an expert academic summarizer.
+
+Summarize the following text clearly and concisely.
+- Preserve all key points
+- Group related ideas logically
+- Use complete sentences
+- Do NOT add new information
+
+Text:
+{text}
+"""
+            }],
+            temperature=0.2,
+            max_tokens=512
+        )
+
+        return [{"summary_text": completion.choices[0].message.content.strip()}]
+
     except Exception as e:
-        return {"error": f"HF request failed: {e}"}
+        return {"error": f"Groq API error: {e}"}
 
-    if response.status_code != 200:
-        return {"error": f"HF error {response.status_code}: {response.text}"}
 
-    if not response.text.strip():
-        return {"error": "Empty response from model"}
-
+# ---------------- WELL-STRUCTURED CHAT ----------------
+def groq_chat(prompt: str) -> str:
     try:
-        return response.json()
+        completion = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a helpful assistant. "
+                        "Always respond in a WELL-STRUCTURED manner.\n\n"
+                        "Rules:\n"
+                        "1. Use clear section headings.\n"
+                        "2. Use short, readable paragraphs.\n"
+                        "3. Keep language simple and professional.\n"
+                        "4. Do not use emojis or symbols.\n"
+                        "5. End with a short conclusion when relevant."
+                    )
+                },
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.2,
+            max_tokens=400
+        )
+
+        answer = completion.choices[0].message.content
+        return answer.encode("utf-8", errors="ignore").decode("utf-8").strip()
+
     except Exception as e:
-        return {"error": f"Failed to parse HF response: {e}"}
+        return f"Chat failed: {e}"

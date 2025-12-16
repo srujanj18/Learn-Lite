@@ -4,16 +4,16 @@ import { getAnalytics } from "firebase/analytics";
 import { getFirestore } from "firebase/firestore";
 import { GoogleAuthProvider, getAuth, signInWithPopup } from "firebase/auth";
 
-// Load environment variables for secure configuration
+// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  databaseURL: import.meta.env.VITE_FIREBASE_DATABASE_URL,
-  projectId: 'larn-lite-2', // Hardcoding project ID to ensure consistency
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
+  apiKey: "AIzaSyC71fAuXbEv5uDLYT6QQD8bdPL-ct8xgDY",
+  authDomain: "larn-lite-2.firebaseapp.com",
+  databaseURL: "https://larn-lite-2-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "larn-lite-2",
+  storageBucket: "larn-lite-2.firebasestorage.app",
+  messagingSenderId: "190319885312",
+  appId: "1:190319885312:web:21a070f1ece25e3927ece5",
+  measurementId: "G-W1BGCDZMFJ"
 };
 
 const app = initializeApp(firebaseConfig);

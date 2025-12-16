@@ -329,169 +329,212 @@ const Chat = () => {
       });
     }
   };
+  const toggleMuteMessage = (message) => {
+  const newMuted = new Set(mutedMessages);
+
+  if (newMuted.has(message.id)) {
+    newMuted.delete(message.id);
+    setMutedMessages(newMuted);
+
+    if (speechEnabled) {
+      speakText(message.text, message.id);
+    }
+  } else {
+    newMuted.add(message.id);
+    setMutedMessages(newMuted);
+    if (synth.speaking) {
+      synth.cancel();
+    }
+  }
+};
 
   return (
-    <div className="mx-auto max-w-4xl">
-      <div className="flex justify-end mb-2 space-x-2">
-        <Button
-          onClick={() => setSpeechEnabled(!speechEnabled)}
-          variant="outline"
-          className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
-        >
-          {speechEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-        </Button>
-        <Button
-          onClick={handleSaveChat}
-          variant="outline"
-          className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600"
-          disabled={messages.length === 0}
-        >
-          Save Chat
-        </Button>
-      </div>
-      <div className="mb-4 rounded-lg border bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900/50 dark:to-purple-900/50 p-4 shadow-lg backdrop-blur-sm">
-        <div className="min-h-[400px] max-h-[60vh] overflow-y-auto space-y-6 py-4 px-2">
-          {messages.map((message) => (
-            <motion.div
-              key={message.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex flex-col ${message.sender === "user" ? "items-end" : "items-start"}`}
-            >
-              <div className="flex items-center gap-2 mb-1 text-sm text-muted-foreground">
-                <span>{message.sender === "user" ? "You" : "AI Assistant"}</span>
-                <span>•</span>
-                <span>{message.timestamp}</span>
-              </div>
-              <div
-                className={`max-w-[80%] rounded-lg p-4 shadow-lg relative group ${message.sender === "user" 
-                  ? "bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-600 text-white rounded-tr-none" 
-                  : "bg-gradient-to-r from-white via-gray-50 to-gray-100 dark:from-gray-800 dark:via-gray-700 dark:to-gray-600 rounded-tl-none backdrop-blur-sm"}`}
-              >
-                <div className="whitespace-pre-wrap">
-                {message.image && (
-                  <img
-                    src={message.image}
-                    alt="Uploaded"
-                    className="max-w-full h-auto rounded-lg mb-2"
-                  />
-                )}
-                {message.text}
-              </div>
-                {message.sender === "ai" && (
-                  <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex space-x-1">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-gray-200/20"
-                      onClick={() => {
-                        if (mutedMessages.has(message.id)) {
-                          const newMutedMessages = new Set(mutedMessages);
-                          newMutedMessages.delete(message.id);
-                          setMutedMessages(newMutedMessages);
-                          if (speechEnabled) {
-                            speakText(message.text, message.id);
-                          }
-                        } else {
-                          const newMutedMessages = new Set(mutedMessages);
-                          newMutedMessages.add(message.id);
-                          setMutedMessages(newMutedMessages);
-                          if (synth.speaking) {
-                            synth.cancel();
-                          }
-                        }
-                      }}
-                      disabled={false}
-                    >
-                      {mutedMessages.has(message.id) ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="hover:bg-gray-200/20"
-                      onClick={() => handleCopy(message.text, message.id)}
-                    >
-                      {copiedId === message.id ? (
-                        <Check className="h-4 w-4" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
-      </div>
+  <div className="mx-auto max-w-5xl h-full flex flex-col">
+    {/* Top Toolbar */}
+    <div className="flex justify-end gap-3 mb-4">
+      <Button
+        onClick={() => setSpeechEnabled(!speechEnabled)}
+        className="
+          bg-gradient-to-r from-indigo-600 to-blue-600
+          hover:from-indigo-500 hover:to-blue-500
+          text-slate-900 shadow-lg
+        "
+      >
+        {speechEnabled ? <Volume2 /> : <VolumeX />}
+      </Button>
 
-      <div className="flex flex-col space-y-4">
-        {selectedImage && (
-          <div className="relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
-            <img src={selectedImage} alt="Selected" className="max-h-60 w-full object-contain" />
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-2 right-2 bg-black/50 hover:bg-black/70 text-white"
-              onClick={clearSelectedImage}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
-        <div className="flex space-x-2">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleImageFileSelect}
-            accept="image/*"
-            className="hidden"
-          />
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleImageUpload}
-            className="flex-shrink-0 bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 dark:from-gray-800 dark:to-gray-700"
-            disabled={isProcessingImage}
-          >
-            {isProcessingImage ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Image className="h-5 w-5" />
-            )}
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={handleVoiceInput}
-            className="flex-shrink-0 bg-gradient-to-r from-gray-50 to-white hover:from-gray-100 hover:to-gray-50 dark:from-gray-800 dark:to-gray-700"
-            disabled={isListening}
-          >
-            {isListening ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Mic className="h-5 w-5" />
-            )}
-          </Button>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            placeholder="Type your message..."
-            className="flex-1 rounded-md border bg-gradient-to-r from-white/80 via-gray-50/80 to-gray-100/80 dark:from-gray-800/80 dark:via-gray-700/80 dark:to-gray-600/80 backdrop-blur-sm px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
-          />
-          <Button onClick={handleSend} className="flex-shrink-0 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white" disabled={isLoading}>
-            {isLoading ? (
-              <Loader2 className="h-5 w-5 animate-spin" />
-            ) : (
-              <Send className="h-5 w-5" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <Button
+        onClick={handleSaveChat}
+        disabled={messages.length === 0}
+        className="
+          bg-gradient-to-r from-indigo-600 to-blue-600
+          hover:from-indigo-500 hover:to-blue-500
+          text-slate-900 shadow-lg
+        "
+      >
+        Save Chat
+      </Button>
     </div>
-  );
+
+    {/* Chat Area */}
+    <div
+      className="
+        flex-1 overflow-y-auto
+        rounded-2xl p-4
+        bg-slate-950
+        border border-indigo-700/40
+        shadow-xl shadow-indigo-900/40
+        space-y-6
+      "
+    >
+      {messages.map((message) => (
+        <motion.div
+          key={message.id}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className={`flex ${
+            message.sender === "user" ? "justify-end" : "justify-start"
+          }`}
+        >
+          <div
+            className={`
+              max-w-[75%] p-4 rounded-2xl relative group
+              ${
+                message.sender === "user"
+                  ? "bg-gradient-to-r from-indigo-600 to-blue-600 text-slate-900 rounded-br-none"
+                  : "bg-slate-900 border border-indigo-700/40 text-indigo-200 rounded-bl-none"
+              }
+            `}
+          >
+            {message.image && (
+              <img
+                src={message.image}
+                alt="Uploaded"
+                className="rounded-lg mb-2 max-h-60"
+              />
+            )}
+
+            <p className="whitespace-pre-wrap text-sm">
+              {message.text}
+            </p>
+
+            {/* AI Message Actions */}
+{message.sender === "ai" && (
+  <div className="
+    absolute -top-3 right-2
+    opacity-0 group-hover:opacity-100
+    transition flex gap-1
+  ">
+    <Button
+      size="icon"
+      variant="ghost"
+      onClick={() => handleCopy(message.text, message.id)}
+      className="bg-slate-800 hover:bg-slate-700"
+    >
+      {copiedId === message.id ? <Check /> : <Copy />}
+    </Button>
+  </div>
+)}
+
+            {/* Speech Controls */}
+            {message.sender === "ai" && (
+              <div className="  
+                absolute -bottom-3 right-2
+                opacity-0 group-hover:opacity-100
+                transition flex gap-1 
+              ">
+                <Button
+                  size="icon" 
+                  variant="ghost"
+                  onClick={() => toggleMuteMessage(message)}
+                  className="bg-slate-800 hover:bg-slate-700"
+                >
+                  {mutedMessages.has(message.id) ? <VolumeX /> : <Volume2 />}
+                </Button>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+
+
+    {/* Input Section */}
+    <div
+      className="
+        mt-4 p-3
+        rounded-2xl
+        bg-slate-950
+        border border-indigo-700/40
+        shadow-lg shadow-indigo-900/40
+        flex items-center gap-3
+      "
+    >
+      {/* Tools */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleImageFileSelect}
+        accept="image/*"
+        className="hidden"
+      />
+
+      <Button
+        size="icon"
+        onClick={handleImageUpload}
+        disabled={isProcessingImage}
+        className="bg-slate-900 hover:bg-slate-800"
+      >
+        {isProcessingImage ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Image />
+        )}
+      </Button>
+
+      <Button
+        size="icon"
+        onClick={handleVoiceInput}
+        disabled={isListening}
+        className="bg-slate-900 hover:bg-slate-800"
+      >
+        {isListening ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Mic />
+        )}
+      </Button>
+
+      {/* Input */}
+      <input
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+        placeholder="Ask the AI anything..."
+        className="
+          flex-1 px-4 py-2 rounded-xl
+          bg-slate-900 text-indigo-200
+          border border-indigo-700/40
+          focus:outline-none focus:ring-2 focus:ring-indigo-500
+        "
+      />
+
+      {/* Send */}
+      <Button
+        onClick={handleSend}
+        disabled={isLoading}
+        className="
+          bg-gradient-to-r from-indigo-600 to-blue-600
+          hover:from-indigo-500 hover:to-blue-500
+          text-slate-900 shadow-lg
+        "
+      >
+        {isLoading ? <Loader2 className="animate-spin" /> : <Send />}
+      </Button>
+    </div>
+  </div>
+);
 };
+
 
 export default Chat;

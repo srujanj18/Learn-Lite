@@ -6,19 +6,18 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/ToastContext";
 import { getProfile, updateUserProfile } from "@/lib/profileService";
-import { useTranslation } from "@/lib/i18n";
 
 const Account = () => {
   const [profile, setProfile] = useState({
-    displayName: '',
-    email: '',
-    bio: '',
-    photoURL: '',
-    newPassword: ''
+    displayName: "",
+    email: "",
+    bio: "",
+    photoURL: "",
+    newPassword: "",
   });
+
   const [loading, setLoading] = useState(false);
   const { showSuccess, showError } = useToast();
-  const { t } = useTranslation();
 
   useEffect(() => {
     loadProfile();
@@ -26,40 +25,32 @@ const Account = () => {
 
   const loadProfile = async () => {
     try {
-      const userProfile = await getProfile();
-      setProfile(prev => ({
-        ...prev,
-        ...userProfile
-      }));
-    } catch (error) {
+      const data = await getProfile();
+      setProfile((prev) => ({ ...prev, ...data }));
+    } catch {
       showError("Failed to load profile");
     }
   };
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const updatedProfile = await updateUserProfile(profile);
-      setProfile(prev => ({
+      const updated = await updateUserProfile(profile);
+      setProfile((prev) => ({
         ...prev,
-        ...updatedProfile,
-        newPassword: '' // Clear password field after successful update
+        ...updated,
+        newPassword: "",
       }));
       showSuccess("Profile updated successfully");
-    } catch (error) {
-      const errorMessage = error.message || "Failed to update profile";
-      showError(errorMessage);
-      // Reload original profile on error
+    } catch (err: any) {
+      showError(err.message || "Profile update failed");
       loadProfile();
     } finally {
       setLoading(false);
@@ -67,79 +58,161 @@ const Account = () => {
   };
 
   return (
-    <div className="bg-card rounded-lg p-6 shadow-sm border">
-      <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-        <User className="h-5 w-5" />
-        Account Settings
-      </h3>
+    <motion.div
+      initial={{ opacity: 0, y: 40 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6 }}
+      className="
+        relative rounded-3xl p-8
+        bg-gradient-to-br from-slate-950 via-indigo-950 to-blue-950
+        border border-indigo-700/40
+        shadow-2xl shadow-indigo-900/40
+      "
+    >
+      {/* Header */}
+      <div className="flex items-center gap-4 mb-8">
+        <div
+          className="
+            p-3 rounded-xl
+            bg-gradient-to-br from-indigo-600 to-blue-600
+            shadow-lg shadow-indigo-700/60
+          "
+        >
+          <User className="h-5 w-5 text-slate-900" />
+        </div>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Display Name</label>
-          <div className="relative">
-            <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+        <h2
+          className="
+            text-2xl font-bold tracking-wide
+            bg-gradient-to-r from-indigo-400 to-blue-400
+            bg-clip-text text-transparent
+          "
+        >
+          Account Neural Interface
+        </h2>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Display Name */}
+        <div>
+          <label className="text-sm text-indigo-300">Display Name</label>
+          <div className="relative mt-2">
+            <User className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
             <Input
               name="displayName"
               value={profile.displayName}
               onChange={handleChange}
-              className="pl-10"
-              placeholder="Your display name"
+              placeholder="Neural identity"
+              className="
+                pl-10 rounded-xl
+                bg-slate-900
+                border border-indigo-700/40
+                text-indigo-200
+                placeholder:text-indigo-400/70
+                focus:ring-2 focus:ring-indigo-500
+                focus:border-indigo-500
+                transition-all
+              "
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Email</label>
-          <div className="relative">
-            <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+        {/* Email */}
+        <div>
+          <label className="text-sm text-indigo-300">Email Address</label>
+          <div className="relative mt-2">
+            <Mail className="absolute left-3 top-3 h-5 w-5 text-blue-400" />
             <Input
               type="email"
               name="email"
               value={profile.email}
               onChange={handleChange}
-              className="pl-10"
-              placeholder="Your email address"
+              placeholder="you@neural.ai"
+              className="
+                pl-10 rounded-xl
+                bg-slate-900
+                border border-blue-700/40
+                text-blue-200
+                placeholder:text-blue-400/70
+                focus:ring-2 focus:ring-blue-500
+                focus:border-blue-500
+                transition-all
+              "
             />
           </div>
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Bio</label>
+        {/* Bio */}
+        <div>
+          <label className="text-sm text-indigo-300">Bio</label>
           <Textarea
             name="bio"
             value={profile.bio}
             onChange={handleChange}
-            placeholder="Tell us about yourself"
-            className="min-h-[100px]"
+            placeholder="Describe your intelligence core..."
+            className="
+              mt-2 rounded-xl min-h-[120px]
+              bg-slate-900
+              border border-indigo-700/40
+              text-indigo-200
+              placeholder:text-indigo-400/70
+              focus:ring-2 focus:ring-indigo-500
+              focus:border-indigo-500
+              transition-all
+            "
           />
         </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">New Password</label>
-          <div className="relative">
-            <Key className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
+        {/* Password */}
+        <div>
+          <label className="text-sm text-indigo-300">New Password</label>
+          <div className="relative mt-2">
+            <Key className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
             <Input
               type="password"
               name="newPassword"
               value={profile.newPassword}
               onChange={handleChange}
-              className="pl-10"
-              placeholder="Enter new password"
+              placeholder="Encrypted key"
+              className="
+                pl-10 rounded-xl
+                bg-slate-900
+                border border-indigo-700/40
+                text-indigo-200
+                placeholder:text-indigo-400/70
+                focus:ring-2 focus:ring-indigo-500
+                focus:border-indigo-500
+                transition-all
+              "
             />
           </div>
-          <p className="text-sm text-muted-foreground">Leave blank to keep current password</p>
+          <p className="text-xs text-indigo-400/70 mt-2">
+            Leave blank to retain current encryption
+          </p>
         </div>
 
-        <Button
-          type="submit"
-          className="w-full"
-          disabled={loading}
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {loading ? "Saving..." : "Save Changes"}
-        </Button>
+        {/* Save Button */}
+        <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.96 }}>
+          <Button
+            type="submit"
+            disabled={loading}
+            className="
+              w-full h-12 rounded-xl
+              font-semibold tracking-wide
+              bg-gradient-to-r from-indigo-600 to-blue-600
+              hover:from-indigo-500 hover:to-blue-500
+              text-slate-900
+              shadow-lg shadow-indigo-700/50
+              transition-all duration-300
+            "
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {loading ? "Synchronizing..." : "Sync Neural Profile"}
+          </Button>
+        </motion.div>
       </form>
-    </div>
+    </motion.div>
   );
 };
 

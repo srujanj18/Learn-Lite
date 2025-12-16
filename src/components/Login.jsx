@@ -1,13 +1,25 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Mail, Lock, LogIn, AlertCircle, UserPlus, Eye, EyeOff, User, Phone, Upload } from "lucide-react";
+import {
+  Mail,
+  Lock,
+  LogIn,
+  UserPlus,
+  Eye,
+  EyeOff,
+  User,
+  Phone,
+  Upload,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/ToastContext";
-import { signInWithEmail, signUpWithEmail, sendPasswordReset, signOutUser } from "@/lib/auth";
+import {
+  signInWithEmail,
+  signUpWithEmail,
+  sendPasswordReset,
+} from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
-import { auth } from "@/lib/firebase";
-import { onAuthStateChanged } from "firebase/auth";
 import { Label } from "@/components/ui/label";
 
 const Login = () => {
@@ -30,17 +42,17 @@ const Login = () => {
     try {
       if (isForgotPassword) {
         await sendPasswordReset(email);
-        showSuccess("Password reset email sent. Please check your inbox.");
+        showSuccess("Password reset email sent");
         setIsForgotPassword(false);
       } else if (isSignUp) {
-        if (!username.trim()) {
-          throw new Error("Username is required");
-        }
-        if (!phoneNumber.trim()) {
-          throw new Error("Phone number is required");
-        }
-        await signUpWithEmail(email, password, username, phoneNumber, profilePicture);
-        showSuccess("Account created successfully. Please check your email for verification.");
+        await signUpWithEmail(
+          email,
+          password,
+          username,
+          phoneNumber,
+          profilePicture
+        );
+        showSuccess("Account created successfully");
         navigate("/");
       } else {
         await signInWithEmail(email, password);
@@ -48,161 +60,173 @@ const Login = () => {
         navigate("/");
       }
     } catch (error) {
-      console.error('Authentication error:', error);
-      if (error.code === 'auth/email-already-in-use') {
-        showError("This email is already registered. Please try signing in instead.");
-      } else if (error.code === 'auth/weak-password') {
-        showError("Password should be at least 6 characters long.");
-      } else if (error.code === 'auth/invalid-email') {
-        showError("Please enter a valid email address.");
-      } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        showError("Invalid email or password.");
-      } else if (error.code === 'auth/too-many-requests') {
-        showError("Too many failed attempts. Please try again later.");
-      } else {
-        showError(error.message || `Failed to ${isSignUp ? 'create account' : isForgotPassword ? 'reset password' : 'login'}`);
-      }
+      showError(error.message || "Authentication failed");
     } finally {
       setLoading(false);
     }
   };
 
-
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4">
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="w-full max-w-md space-y-8 rounded-lg border bg-card p-6 shadow-lg"
+        transition={{ duration: 0.5 }}
+        className="
+          w-full max-w-md
+          rounded-3xl p-8
+          bg-gradient-to-br from-slate-950 via-indigo-950 to-blue-950
+          border border-indigo-700/40
+          shadow-2xl shadow-indigo-900/40
+        "
       >
-        <div className="text-center">
-          <h2 className="text-2xl font-bold tracking-tight">
-            {isForgotPassword ? "Reset Password" : isSignUp ? "Create Account" : "Welcome back"}
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h2 className="
+            text-3xl font-bold
+            bg-gradient-to-r from-indigo-400 to-blue-400
+            bg-clip-text text-transparent
+          ">
+            {isForgotPassword
+              ? "Reset Password"
+              : isSignUp
+              ? "Create Account"
+              : "Welcome Back"}
           </h2>
-          <p className="text-sm text-muted-foreground">
-            {isForgotPassword ? "Enter your email to reset password" : isSignUp ? "Sign up for a new account" : "Sign in to your account"}
+          <p className="text-indigo-400 text-sm mt-2">
+            {isForgotPassword
+              ? "Receive a password reset link"
+              : isSignUp
+              ? "Create your AI-powered account"
+              : "Sign in to continue"}
           </p>
         </div>
 
-        <form onSubmit={handleEmailAuth} className="space-y-4">
+        {/* Form */}
+        <form onSubmit={handleEmailAuth} className="space-y-5">
           {isSignUp && (
-            <div className="space-y-4">
-              <div className="relative">
-                <User className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="text"
-                  placeholder="Username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
-              
-              <div className="relative">
-                <Phone className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="tel"
-                  placeholder="Phone Number"
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="pl-10"
-                  required
-                />
-              </div>
+            <>
+              <InputField
+                icon={User}
+                placeholder="Username"
+                value={username}
+                onChange={setUsername}
+              />
+              <InputField
+                icon={Phone}
+                placeholder="Phone Number"
+                value={phoneNumber}
+                onChange={setPhoneNumber}
+              />
 
-              <div className="space-y-2">
-                <Label htmlFor="profile-picture" className="flex items-center gap-2 cursor-pointer p-2 border rounded hover:bg-accent">
-                  <Upload className="h-5 w-5 text-muted-foreground" />
-                  <span>Upload Profile Picture</span>
+              <div>
+                <Label className="text-indigo-300 text-sm mb-2 block">
+                  Profile Picture
                 </Label>
-                <Input
-                  id="profile-picture"
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setProfilePicture(e.target.files[0])}
-                  className="hidden"
-                />
-                {profilePicture && (
-                  <p className="text-sm text-muted-foreground">
-                    Selected: {profilePicture.name}
-                  </p>
-                )}
+                <label className="
+                  flex items-center gap-3 p-3 rounded-xl
+                  bg-slate-900 border border-indigo-700/40
+                  cursor-pointer hover:bg-slate-800
+                ">
+                  <Upload className="text-indigo-400" />
+                  <span className="text-indigo-200 text-sm">
+                    {profilePicture ? profilePicture.name : "Upload image"}
+                  </span>
+                  <input
+                    type="file"
+                    hidden
+                    accept="image/*"
+                    onChange={(e) =>
+                      setProfilePicture(e.target.files?.[0] || null)
+                    }
+                  />
+                </label>
               </div>
-            </div>
+            </>
           )}
 
-          <div className="space-y-2">
-            <div className="relative">
-              <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-              <Input
-                type="email"
-                placeholder="Email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="pl-10"
-                required
-              />
-            </div>
-          </div>
+          <InputField
+            icon={Mail}
+            placeholder="Email address"
+            value={email}
+            onChange={setEmail}
+            type="email"
+          />
 
           {!isForgotPassword && (
-            <div className="space-y-2">
-              <div className="relative">
-                <Lock className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                <div className="relative">
-                  <Input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground focus:outline-none"
-                  >
-                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-                  </button>
-                </div>
-              </div>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="
+                  pl-10 pr-10 h-11 rounded-xl
+                  bg-slate-900 border border-indigo-700/40
+                  text-indigo-200
+                  focus:ring-2 focus:ring-indigo-500
+                "
+                required
+              />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3 text-indigo-400"
+              >
+                {showPassword ? <EyeOff /> : <Eye />}
+              </button>
             </div>
           )}
 
-          <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? (
-              isForgotPassword ? "Sending reset link..." : isSignUp ? "Creating account..." : "Signing in..."
-            ) : (
+          {/* Submit */}
+          <Button
+            type="submit"
+            disabled={loading}
+            className="
+              w-full h-12 rounded-xl
+              bg-gradient-to-r from-indigo-600 to-blue-600
+              hover:from-indigo-500 hover:to-blue-500
+              text-slate-900 font-semibold
+              shadow-lg shadow-indigo-700/40
+            "
+          >
+            {loading ? "Please wait..." : (
               <>
-                {isForgotPassword ? <Mail className="mr-2 h-4 w-4" /> : isSignUp ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
-                {isForgotPassword ? "Send Reset Link" : isSignUp ? "Create Account" : "Sign In"}
+                {isForgotPassword
+                  ? <Mail className="mr-2" />
+                  : isSignUp
+                  ? <UserPlus className="mr-2" />
+                  : <LogIn className="mr-2" />}
+                {isForgotPassword
+                  ? "Send Reset Link"
+                  : isSignUp
+                  ? "Create Account"
+                  : "Sign In"}
               </>
             )}
           </Button>
 
-
-
-          <div className="text-center text-sm space-y-2">
+          {/* Links */}
+          <div className="text-center text-sm space-y-2 text-indigo-400">
             {!isForgotPassword && (
               <button
                 type="button"
-                className="text-primary hover:underline block w-full"
                 onClick={() => setIsSignUp(!isSignUp)}
+                className="hover:text-indigo-300"
               >
-                {isSignUp ? "Already have an account? Sign in" : "Don't have an account? Sign up"}
+                {isSignUp
+                  ? "Already have an account? Sign in"
+                  : "Don't have an account? Sign up"}
               </button>
             )}
             <button
               type="button"
-              className="text-primary hover:underline block w-full"
               onClick={() => {
                 setIsForgotPassword(!isForgotPassword);
                 setIsSignUp(false);
               }}
+              className="hover:text-indigo-300 block w-full"
             >
               {isForgotPassword ? "Back to Sign In" : "Forgot Password?"}
             </button>
@@ -212,5 +236,26 @@ const Login = () => {
     </div>
   );
 };
+
+/* ---------------- Reusable Input ---------------- */
+
+const InputField = ({ icon: Icon, value, onChange, placeholder, type = "text" }) => (
+  <div className="relative">
+    <Icon className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+    <Input
+      type={type}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="
+        pl-10 h-11 rounded-xl
+        bg-slate-900 border border-indigo-700/40
+        text-indigo-200
+        focus:ring-2 focus:ring-indigo-500
+      "
+      required
+    />
+  </div>
+);
 
 export default Login;
