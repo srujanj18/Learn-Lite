@@ -43,6 +43,30 @@ export const getFirestoreChats = async (userId) => {
   }
 };
 
+export const deleteFirestoreChat = async (userId, chatId) => {
+  try {
+    if (!userId || !chatId) throw new Error('User ID and Chat ID are required');
+    const chatDocRef = doc(db, 'chats', userId, 'messages', chatId);
+    await deleteDoc(chatDocRef);
+  } catch (error) {
+    console.error('Failed to delete chat from Firestore:', error);
+    throw error;
+  }
+};
+
+export const deleteAllFirestoreChats = async (userId) => {
+  try {
+    if (!userId) throw new Error('User ID is required');
+    const chatsRef = collection(db, 'chats', userId, 'messages');
+    const querySnapshot = await getDocs(chatsRef);
+    const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+    await Promise.all(deletePromises);
+  } catch (error) {
+    console.error('Failed to delete all chats from Firestore:', error);
+    throw error;
+  }
+};
+
 // Image Generation Operations
 export const saveImageGeneration = async (userId, imageData) => {
   try {

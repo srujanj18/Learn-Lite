@@ -23,10 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useToast } from "@/components/ui/ToastContext";
 
 const SavedChats = () => {
   const [savedChats, setSavedChats] = useState([]);
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     const loadChats = async () => {
@@ -43,18 +45,31 @@ const SavedChats = () => {
     loadChats();
   }, []);
 
-  const handleDelete = (id) => {
-    deleteChat(id);
-    setSavedChats(getSavedChats());
+  const handleDelete = async (id) => {
+    try {
+      await deleteChat(id);
+      const updatedChats = await getSavedChats();
+      setSavedChats(updatedChats);
+      showSuccess("Chat deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete chat:", error);
+      showError("Failed to delete chat. Please try again.");
+    }
   };
 
   const handleOpen = (chat) => {
     navigate("/chat", { state: { savedChat: chat } });
   };
 
-  const handleDeleteAll = () => {
-    deleteAllChats();
-    setSavedChats([]);
+  const handleDeleteAll = async () => {
+    try {
+      await deleteAllChats();
+      setSavedChats([]);
+      showSuccess("All chats deleted successfully");
+    } catch (error) {
+      console.error("Failed to delete all chats:", error);
+      showError("Failed to delete all chats. Please try again.");
+    }
   };
 
   return (
@@ -111,9 +126,9 @@ const SavedChats = () => {
 
       {/* Chat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {savedChats.map((chat) => (
+        {savedChats.map((chat, index) => (
           <motion.div
-            key={chat.sessionId}
+            key={`${chat.sessionId}-${index}`}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             whileHover={{ scale: 1.02 }}

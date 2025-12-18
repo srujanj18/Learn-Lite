@@ -2,12 +2,10 @@ import React, { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Upload, FileText, Loader2, Send, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/components/ui/ToastContext";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import * as XLSX from "xlsx";
-import { auth } from "@/lib/firebase";
 
 /* -------- Backend calls unchanged -------- */
 
@@ -20,9 +18,80 @@ export default function DocumentAnalysis() {
   const [chatInput, setChatInput] = useState("");
   const [isChatLoading, setIsChatLoading] = useState(false);
   const chatContainerRef = useRef(null);
-  const { toast } = useToast();
+  const { showSuccess, showError } = useToast();
 
-  /* -------- handlers unchanged -------- */
+  const analyzeDocument = async () => {
+    if (!file && !textInput.trim()) return;
+
+    setLoading(true);
+    try {
+      const formData = new FormData();
+
+      if (file) {
+        formData.append("file", file);
+      } else {
+        formData.append("content", textInput);
+      }
+
+      const response = await fetch("http://localhost:8000/analyze", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Analysis failed");
+      }
+
+      const data = await response.json();
+      setAnalysis(data);
+      setChatMessages([]); // Reset chat when new document is analyzed
+
+      showSuccess("Document has been analyzed successfully.");
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to analyze document",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const sendChatMessage = async () => {
+    if (!chatInput.trim()) return;
+
+    const userMessage = { id: Date.now(), sender: "user", text: chatInput };
+    setChatMessages((prev) => [...prev, userMessage]);
+    setIsChatLoading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("question", chatInput);
+
+      const response = await fetch("http://localhost:8000/chat", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Chat failed");
+      }
+
+      const data = await response.json();
+      const aiMessage = {
+        id: Date.now() + 1,
+        sender: "ai",
+        text: data.answer,
+      };
+      setChatMessages((prev) => [...prev, aiMessage]);
+    } catch (error) {
+      showError(error.message || "Failed to send message");
+    } finally {
+      setIsChatLoading(false);
+      setChatInput("");
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
@@ -62,7 +131,12 @@ export default function DocumentAnalysis() {
           <p className="text-indigo-300 text-sm">
             Click or drag a document here
           </p>
-          <input type="file" hidden />
+          <input
+            type="file"
+            accept=".pdf,.txt,.doc,.docx"
+            hidden
+            onChange={(e) => setFile(e.target.files[0])}
+          />
         </label>
 
         {file && (
@@ -111,7 +185,7 @@ export default function DocumentAnalysis() {
 
         {/* Analyze */}
         <Button
-          onClick={() => {}}
+          onClick={analyzeDocument}
           disabled={loading || (!file && !textInput)}
           className="
             w-full h-11
@@ -203,6 +277,7 @@ export default function DocumentAnalysis() {
               <Input
                 value={chatInput}
                 onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendChatMessage()}
                 placeholder="Ask something about the document..."
                 className="
                   bg-slate-900 text-indigo-200
@@ -212,7 +287,7 @@ export default function DocumentAnalysis() {
               />
 
               <Button
-                onClick={() => {}}
+                onClick={sendChatMessage}
                 disabled={isChatLoading}
                 className="
                   bg-gradient-to-r from-indigo-600 to-blue-600

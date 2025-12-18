@@ -9,7 +9,7 @@ import Home from "@/components/Home";
 import Chat from "@/components/Chat";
 import SavedChats from "@/components/SavedChats";
 import ImageGeneration from "@/components/ImageGeneration";
-import DocumentAnalysis from "@/components/DocumentAnalysis.tsx";
+import DocumentAnalysis from "@/components/DocumentAnalysis";
 import DocumentMining from "@/components/DocumentMining";
 import Settings from "@/components/Settings";
 import Login from "@/components/Login";

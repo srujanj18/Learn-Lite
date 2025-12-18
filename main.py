@@ -3,17 +3,15 @@ import re
 import string
 import io
 from typing import Optional
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from summarize import groq_query, groq_chat
 import PyPDF2
-from dotenv import load_dotenv
 from image_generation import router as image_router
-
-
-
-
-load_dotenv()
 
 app = FastAPI()
 

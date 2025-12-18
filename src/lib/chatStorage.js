@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import { saveFirestoreChat, getFirestoreChats } from './firestoreService';
+import { saveFirestoreChat, getFirestoreChats, deleteFirestoreChat, deleteAllFirestoreChats } from './firestoreService';
 
 export const saveChat = async (chat) => {
   try {
@@ -87,20 +87,49 @@ export const getSavedChats = async () => {
   }
 };
 
-export const deleteChat = (sessionId) => {
+export const deleteChat = async (sessionId) => {
   try {
-    const savedChats = getSavedChats();
-    const updatedChats = savedChats.filter(chat => chat.sessionId !== sessionId);
+    // Delete from localStorage first
+    const localChats = JSON.parse(localStorage.getItem('savedChats') || '[]');
+    const updatedChats = localChats.filter(chat => chat.sessionId !== sessionId);
     localStorage.setItem('savedChats', JSON.stringify(updatedChats));
+
+    // Delete from Firestore if user is authenticated
+    if (auth.currentUser?.uid) {
+      try {
+        // Find the chat document ID in Firestore (assuming sessionId matches the document ID)
+        const firestoreChats = await getFirestoreChats(auth.currentUser.uid);
+        const chatToDelete = firestoreChats.find(chat => chat.sessionId === sessionId);
+        if (chatToDelete && chatToDelete.id) {
+          await deleteFirestoreChat(auth.currentUser.uid, chatToDelete.id);
+        }
+      } catch (firestoreError) {
+        console.error('Failed to delete chat from Firestore:', firestoreError);
+        // Don't throw error here, as localStorage deletion succeeded
+      }
+    }
   } catch (error) {
     console.error('Failed to delete chat:', error);
+    throw error; // Rethrow if localStorage deletion fails
   }
 };
 
-export const deleteAllChats = () => {
+export const deleteAllChats = async () => {
   try {
+    // Clear localStorage first
     localStorage.setItem('savedChats', '[]');
+
+    // Delete all from Firestore if user is authenticated
+    if (auth.currentUser?.uid) {
+      try {
+        await deleteAllFirestoreChats(auth.currentUser.uid);
+      } catch (firestoreError) {
+        console.error('Failed to delete all chats from Firestore:', firestoreError);
+        // Don't throw error here, as localStorage deletion succeeded
+      }
+    }
   } catch (error) {
     console.error('Failed to delete all chats:', error);
+    throw error; // Rethrow if localStorage deletion fails
   }
 };
