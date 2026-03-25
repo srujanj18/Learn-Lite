@@ -1,12 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  MessageSquare,
-  Trash2,
-  Clock,
-  MessageCircle,
-  FolderOpen,
-} from "lucide-react";
+import { MessageSquare, Trash2, Clock, MessageCircle, FolderOpen, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSavedChats, deleteChat, deleteAllChats } from "@/lib/chatStorage";
 import { useNavigate } from "react-router-dom";
@@ -36,9 +30,7 @@ const SavedChats = () => {
         const chats = await getSavedChats();
         setSavedChats(chats);
       } catch {
-        const localChats = JSON.parse(
-          localStorage.getItem("savedChats") || "[]"
-        );
+        const localChats = JSON.parse(localStorage.getItem("savedChats") || "[]");
         setSavedChats(localChats);
       }
     };
@@ -73,144 +65,118 @@ const SavedChats = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div className="flex items-center gap-4">
-          <div className="p-3 rounded-xl bg-gradient-to-br from-indigo-600 to-blue-600 shadow-lg shadow-indigo-700/40">
-            <FolderOpen className="h-6 w-6 text-slate-900" />
-          </div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-400 to-blue-400 bg-clip-text text-transparent">
-            Saved Conversations
-          </h1>
-        </div>
-
-        {savedChats.length > 0 && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="destructive"
-                className="shadow-md shadow-red-700/30"
-              >
-                Delete All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete all saved chats?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently remove all saved conversations.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleDeleteAll}>
-                  Delete All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
-      </div>
-
-      {/* Empty State */}
-      {savedChats.length === 0 && (
-        <div className="text-center py-20 text-indigo-400">
-          <MessageSquare className="mx-auto h-12 w-12 mb-4 opacity-50" />
-          <p className="text-lg font-medium">No saved chats yet</p>
-          <p className="text-sm text-indigo-500">
-            Your saved conversations will appear here
-          </p>
-        </div>
-      )}
-
-      {/* Chat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {savedChats.map((chat, index) => (
-          <motion.div
-            key={`${chat.sessionId}-${index}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ scale: 1.02 }}
-            className="
-              rounded-3xl p-6
-              bg-gradient-to-br from-slate-950 via-indigo-950 to-blue-950
-              border border-indigo-700/40
-              shadow-xl shadow-indigo-900/40
-              transition-all
-            "
-          >
-            {/* Card Header */}
-            <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                <MessageSquare className="h-5 w-5 text-indigo-400" />
-                <h3 className="font-semibold text-indigo-200">
-                  Chat Session
-                </h3>
-              </div>
-              <div className="flex items-center gap-1 text-xs text-indigo-400">
-                <Clock className="h-3 w-3" />
-                {format(new Date(chat.timestamp), "dd MMM yyyy â€¢ HH:mm")}
-              </div>
+    <div className="page-shell">
+      <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} className="page-header glow-box lava-border">
+        <div className="page-header-grid">
+          <div className="hero-copy">
+            <p className="eyebrow">
+              <Sparkles size={14} />
+              Saved Sessions
+            </p>
+            <div>
+              <h1 className="hero-title">
+                Reopen your <span>best conversations</span>
+              </h1>
+              <p className="hero-text mt-4">
+                Review previous chat sessions, inspect recent message context, and jump straight back into the main AI console.
+              </p>
             </div>
+          </div>
 
-            {/* Preview */}
-            <ScrollArea className="h-28 mb-5 pr-2">
-              <div className="space-y-2">
-                {chat.messages?.slice(-3).map((msg, idx) => (
-                  <div
-                    key={idx}
-                    className={`flex ${
-                      msg.sender === "user"
-                        ? "justify-end"
-                        : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`
-                        max-w-[80%] px-3 py-2 rounded-xl text-sm
-                        ${
-                          msg.sender === "user"
-                            ? "bg-indigo-600 text-slate-900"
-                            : "bg-slate-800 text-indigo-200 border border-indigo-700/40"
-                        }
-                      `}
-                    >
-                      <div className="flex items-center gap-2">
-                        <MessageCircle className="h-3 w-3 opacity-60" />
-                        <span className="truncate">{msg.text}</span>
+          <div className="hero-stats">
+            <div className="metric-card">
+              <p className="metric-kicker">Saved Chats</p>
+              <p className="metric-value">{savedChats.length}</p>
+              <p className="metric-subtext">Stored sessions available to reopen or clean up.</p>
+            </div>
+          </div>
+        </div>
+      </motion.section>
+
+      <section className="content-card panel">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="section-title">Conversation library</h2>
+            <p className="section-copy mt-2">Every saved session keeps a short preview so you can identify the right thread quickly.</p>
+          </div>
+
+          {savedChats.length > 0 && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="destructive">Delete All</Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Delete all saved chats?</AlertDialogTitle>
+                  <AlertDialogDescription>This will permanently remove every stored conversation from your workspace.</AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteAll}>Delete All</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+        </div>
+
+        {savedChats.length === 0 ? (
+          <div className="empty-state rounded-[24px] border border-[rgba(255,120,50,0.12)] bg-[rgba(255,255,255,0.02)]">
+            <FolderOpen className="h-10 w-10 text-[#FF8C42]" />
+            <p className="text-lg font-medium text-white">No saved chats yet</p>
+            <p className="text-sm text-[rgba(237,237,237,0.62)]">Saved conversations will appear here once you store them from the AI console.</p>
+          </div>
+        ) : (
+          <div className="card-grid">
+            {savedChats.map((chat, index) => (
+              <motion.div
+                key={`${chat.sessionId}-${index}`}
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -4 }}
+                className="content-card panel"
+              >
+                <div className="mb-4 flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[rgba(255,80,0,0.08)] text-[#FF8C42]">
+                      <MessageSquare className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-semibold text-white">Chat Session</h3>
+                      <div className="mt-1 flex items-center gap-2 text-xs text-[rgba(237,237,237,0.5)]">
+                        <Clock className="h-3.5 w-3.5" />
+                        {format(new Date(chat.timestamp), "dd MMM yyyy • HH:mm")}
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
+                  <button onClick={() => handleDelete(chat.sessionId)} className="rounded-xl border border-[rgba(255,120,50,0.16)] p-2 text-[rgba(237,237,237,0.55)] transition hover:text-[#FF8C42]">
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
 
-            {/* Actions */}
-            <div className="flex justify-between items-center">
-              <Button
-                onClick={() => handleOpen(chat)}
-                className="
-                  bg-gradient-to-r from-indigo-600 to-blue-600
-                  hover:from-indigo-500 hover:to-blue-500
-                  text-slate-900 shadow-md shadow-indigo-700/40
-                "
-              >
-                Open Chat
-              </Button>
+                <ScrollArea className="h-32 rounded-[20px] border border-[rgba(255,120,50,0.12)] bg-[rgba(255,255,255,0.02)] p-3">
+                  <div className="space-y-2 pr-2">
+                    {chat.messages?.slice(-3).map((msg, idx) => (
+                      <div key={idx} className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"}`}>
+                        <div className={`max-w-[85%] px-3 py-2 text-sm ${msg.sender === "user" ? "message-bubble-user" : "message-bubble-ai"}`}>
+                          <div className="flex items-center gap-2">
+                            <MessageCircle className="h-3 w-3 opacity-70" />
+                            <span className="truncate">{msg.text}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
 
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={() => handleDelete(chat.sessionId)}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <span className="pill">{chat.messages?.length || 0} messages</span>
+                  <Button onClick={() => handleOpen(chat)}>Open Chat</Button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   );
 };

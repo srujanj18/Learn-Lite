@@ -1,5 +1,5 @@
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
-import { updateProfile, updateEmail, updatePassword } from 'firebase/auth';
+import { updateProfile, updateEmail, updatePassword, reload, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
 
 const PROFILE_COLLECTION = 'userSettings';
@@ -13,6 +13,20 @@ const defaultProfile = {
   lastUpdated: null
 };
 
+const shouldForceSignOut = (error) => {
+  const message = `${error?.message || ''} ${error?.customData?._serverResponse || ''}`.toLowerCase();
+
+  return (
+    error?.code === 'auth/user-token-expired' ||
+    error?.code === 'auth/user-not-found' ||
+    error?.code === 'auth/invalid-user-token' ||
+    (error?.code === 'auth/network-request-failed' &&
+      typeof navigator !== 'undefined' &&
+      navigator.onLine &&
+      message.includes('user_not_found'))
+  );
+};
+
 export const getProfile = async () => {
   const user = auth.currentUser;
   if (!user) {
@@ -20,6 +34,8 @@ export const getProfile = async () => {
   }
 
   try {
+    await reload(user);
+
     const profileRef = doc(db, PROFILE_COLLECTION, user.uid);
     const profileSnap = await getDoc(profileRef);
     
@@ -41,8 +57,15 @@ export const getProfile = async () => {
     return newProfile;
   } catch (error) {
     console.error('Error fetching profile:', error);
+    if (shouldForceSignOut(error)) {
+      await signOut(auth);
+      throw new Error('Your session is no longer valid. Please sign in again.');
+    }
     if (error.code === 'permission-denied') {
       throw new Error('You do not have permission to access this profile. Please ensure you are signed in.');
+    }
+    if (error.code?.includes('unavailable') || error.code?.includes('failed-precondition')) {
+      throw new Error('Profile service is temporarily unavailable. Please check your connection and try again.');
     }
     throw new Error(error.message || 'Failed to fetch user profile. Please try again later.');
   }
@@ -60,6 +83,8 @@ export const updateUserProfile = async (profileData) => {
   }
 
   try {
+    await reload(user);
+
     // Check if profile exists first
     const profileRef = doc(db, PROFILE_COLLECTION, user.uid);
     const profileSnap = await getDoc(profileRef);
@@ -132,6 +157,9 @@ export const updateUserProfile = async (profileData) => {
       // Force sign out on invalid token
       await signOut(auth);
       throw new Error('Your session has expired. Please sign in again.');
+    } else if (shouldForceSignOut(error)) {
+      await signOut(auth);
+      throw new Error('Your account session is no longer available. Please sign in again.');
     }
     console.error('Profile update error details:', error);
     throw new Error(error.message || 'Failed to update user profile. Please try again later.');
